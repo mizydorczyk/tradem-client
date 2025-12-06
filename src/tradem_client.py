@@ -18,12 +18,6 @@ class Client:
         self.password = password
         self.api_key = api_key
         self.verify_ssl = verify_ssl if verify_ssl is not None else False
-        if isinstance(verify_ssl, str):
-            self.verify_ssl = verify_ssl
-        elif verify_ssl:
-            self.verify_ssl = certifi.where()
-        else:
-            self.verify_ssl = False
         self.api_token = None
         self.session = requests.Session()
         self.session.verify = self.verify_ssl
