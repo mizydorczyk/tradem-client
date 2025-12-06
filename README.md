@@ -36,14 +36,14 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. Run the example from the `src` directory:
+4. Run the example trading bot from the `src` directory:
 
 ```bash
 cd src
-python3 example.py
+python3 bot.py
 ```
 
-## Testing
+## Running tests
 
 ```bash
 PYTHONPATH=src python3 -m unittest discover tests
