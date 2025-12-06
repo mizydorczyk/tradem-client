@@ -9,7 +9,7 @@ Has been adapted from https://github.com/The-Brawl/the-brawl-client-api by Mateu
 - `src/`: Source code
     - `tradem_client.py`: Main client class
     - `models.py`: Data models
-    - `example.py`: Example usage script
+    - `bot.py`: Example trading bot
 - `requirements.txt`: Python dependencies
 - `server_certificate.pem`: SSL certificate bundle
 
