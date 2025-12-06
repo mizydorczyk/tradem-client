@@ -4,7 +4,7 @@ import socketio
 from models import User, Wallet
 from typing import List, Optional
 
-logging.basicConfig(level=logging.DEBUG, format='[Client] %(asctime)s - %(levelname)s - %(message)s')
+logging.getLogger(__name__)
 logger = logging.getLogger(__name__)
 
 class Client:
@@ -26,7 +26,7 @@ class Client:
         self.sio = socketio.Client(logger=False, engineio_logger=False)
 
     def initialize(self):
-        logger.info("Initializing...")
+        logger.debug("Initializing...")
 
         self._authenticate()
         self._ui_login()
@@ -34,12 +34,12 @@ class Client:
         
         if self.user_data and self.user_data.accounts:
             self.default_account_id = self.user_data.accounts[0].id
-            logger.info(f"Default account set to {self.default_account_id}.")
+            logger.debug(f"Default account set to {self.default_account_id}.")
         
-        logger.info("Initialization complete")
+        logger.debug("Initialization complete")
 
     def _authenticate(self):
-        logger.info("Authenticating...")
+        logger.debug("Authenticating...")
 
         payload = {
             "email": self.email,
@@ -50,31 +50,31 @@ class Client:
         response.raise_for_status()
         self.api_token = response.json()['idToken']
 
-        logger.info("Authentication successful.")
+        logger.debug("Authentication successful.")
 
     def _ui_login(self):
-        logger.info("Logging into UI API...")
+        logger.debug("Logging into UI API...")
 
         url = f'{self.BASE_UI_URL}/auth/login'
         headers = {'Authorization': f'{self.api_token}', 'Content-Type': 'application/json'}
         response = self.session.post(url, headers=headers, data='', verify=self.verify_ssl)
         response.raise_for_status()
 
-        logger.info("UI login successful.")
+        logger.debug("UI login successful.")
 
     def _get_user_data(self):
-        logger.info("Fetching user data...")
+        logger.debug("Fetching user data...")
 
         url = f'{self.BASE_UI_URL}/user'
         response = self.session.get(url, verify=self.verify_ssl)
         response.raise_for_status()
         self.user_data = User.from_dict(response.json())
 
-        logger.info("User data fetched successfully.")
+        logger.debug("User data fetched successfully.")
         return self.user_data
 
     def create_transaction(self, source_wallet_id: str, dest_wallet_id: str, amount_from_source: Optional[float] = None, amount_to_dest: Optional[float] = None, exchange_rate: Optional[float] = None) -> dict:
-        logger.info(f"Creating transaction from {source_wallet_id} to {dest_wallet_id}")
+        logger.debug(f"Creating transaction from {source_wallet_id} to {dest_wallet_id}")
         
         url = f'{self.BASE_API_URL}/transaction'
         payload = {
@@ -93,11 +93,11 @@ class Client:
         response = requests.post(url, headers=headers, json=payload, verify=self.verify_ssl)
         response.raise_for_status()
 
-        logger.info("Transaction created successfully")
+        logger.debug("Transaction created successfully")
         return response.json()
 
     def connect_socket(self, on_price_update=None):
-        logger.info("Connecting to WebSocket...")
+        logger.debug("Connecting to WebSocket...")
 
         if on_price_update:
             self.sio.on('rate-update', on_price_update)
@@ -116,18 +116,17 @@ class Client:
                 transports=['websocket'],
                 headers=headers
             )
-            logger.info(f"WebSocket connected with SID: {self.sio.sid}")
+            logger.debug(f"WebSocket connected with SID: {self.sio.sid}")
         except Exception as e:
             logger.error(f"WebSocket connection failed: {e}")
             raise
-
 
     def get_wallet_valuation(self, wallet_id: str, account_id: Optional[str] = None, limit: Optional[int] = None, from_time: Optional[int] = None, to_time: Optional[int] = None, offset: Optional[int] = None) -> dict:
         target_account_id = account_id or self.default_account_id
         if not target_account_id:
             raise Exception("Default account is not set. Initialize the client first.")
 
-        logger.info(f"Fetching wallet valuation for wallet {wallet_id}")
+        logger.debug(f"Fetching wallet valuation for wallet {wallet_id}")
         
         url = f'{self.BASE_API_URL}/account/{target_account_id}/wallet/{wallet_id}/valuation'
         params = {}
@@ -144,11 +143,11 @@ class Client:
         headers = {'Authorization': f'Bearer {self.api_token}'}
         response = requests.get(url, headers=headers, params=params, verify=self.verify_ssl)
         response.raise_for_status()
-        logger.info("Wallet valuation fetched successfully.")
+        logger.debug("Wallet valuation fetched successfully.")
         return response.json()
 
     def get_wallets(self, account_id: Optional[str] = None) -> List[Wallet]:
-        logger.info("Fetching wallets...")
+        logger.debug("Fetching wallets...")
         
         target_account_id = account_id or self.default_account_id
         if not target_account_id:
@@ -156,7 +155,7 @@ class Client:
 
         for account in self.user_data.accounts:
             if account.id == target_account_id:
-                logger.info(f"Found {len(account.wallets)} wallets for account {target_account_id}")
+                logger.debug(f"Found {len(account.wallets)} wallets for account {target_account_id}")
                 return account.wallets
         
         logger.warning(f"Account {target_account_id} not found")
