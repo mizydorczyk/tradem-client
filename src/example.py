@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from tradem_client import Client
+from models import Rates
 
 load_dotenv()
 
@@ -33,3 +34,26 @@ try:
     print(f"Sell successful: {sell_response}")
 except Exception as e:
     print(f"Transaction failed: {e}")
+
+# Live data feed
+print("Connecting to WebSocket for price updates...")
+def on_price_update(data):
+    rates = Rates.from_dict(data)
+
+    target_pairs = ['btc-usd', 'eth-usd']
+    formatted = []
+    
+    for pair in target_pairs:
+        if pair in rates:
+             formatted.append(f"{pair.upper()}: {rates[pair]}")
+    
+    if formatted:
+        print(f"Rates: {', '.join(formatted)}")
+
+try:
+    client.connect_socket(on_price_update=on_price_update)
+    client.sio.wait()
+except KeyboardInterrupt:
+    client.sio.disconnect()
+except Exception as e:
+    print(f"WebSocket error: {e}")

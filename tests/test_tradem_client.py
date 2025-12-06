@@ -321,5 +321,45 @@ class TestBuySell(unittest.TestCase):
             self.client.buy('USD', 100)
         self.assertIn("Cannot buy USD with itself", str(cm.exception))
 
+
+class TestWebSocket(unittest.TestCase):
+    def setUp(self):
+        self.client = Client(email="test@example.com", password="password")
+        self.client.sio = MagicMock()
+        self.client.session = MagicMock()
+        self.client.session.cookies.get_dict.return_value = {'connect.sid': 's%3A123', 'other': 'val'}
+
+    def test_connect_socket_success(self):
+        # Arrange
+        callback = MagicMock()
+
+        # Act
+        self.client.connect_socket(on_price_update=callback)
+
+        # Assert
+        self.client.sio.on.assert_called_with('rate-update', callback)
+        self.client.sio.connect.assert_called_with(
+            'https://platform.tradem.online',
+            socketio_path='/ui/api/connect/socket',
+            transports=['websocket'],
+            headers={'Cookie': 'connect.sid=s%3A123; other=val'}
+        )
+
+    def test_connect_socket_no_callback(self):
+        # Act
+        self.client.connect_socket()
+
+        # Assert
+        self.client.sio.on.assert_not_called()
+        self.client.sio.connect.assert_called()
+
+    def test_connect_socket_failure(self):
+        # Arrange
+        self.client.sio.connect.side_effect = Exception("Connection failed")
+
+        # Act & Assert
+        with self.assertRaisesRegex(Exception, "Connection failed"):
+            self.client.connect_socket()
+
 if __name__ == '__main__':
     unittest.main()

@@ -59,3 +59,10 @@ class User:
             name=user_data.get('name'),
             accounts=[Account.from_dict(a) for a in user_data.get('accounts', [])]
         )
+
+class Rates(dict):
+    @classmethod
+    def from_dict(cls, data: dict): 
+        if isinstance(data, dict):
+             return cls(data)
+        return cls()

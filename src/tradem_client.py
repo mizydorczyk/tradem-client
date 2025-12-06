@@ -1,9 +1,10 @@
 import requests
 import logging
+import socketio
 from models import User, Wallet
 from typing import List, Optional
 
-logging.basicConfig(level=logging.INFO, format='[Client] %(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='[Client] %(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class Client:
@@ -22,6 +23,7 @@ class Client:
         self.session.verify = self.verify_ssl
         self.user_data = None
         self.default_account_id = None
+        self.sio = socketio.Client(logger=False, engineio_logger=False)
 
     def initialize(self):
         logger.info("Initializing...")
@@ -93,6 +95,32 @@ class Client:
 
         logger.info("Transaction created successfully")
         return response.json()
+
+    def connect_socket(self, on_price_update=None):
+        logger.info("Connecting to WebSocket...")
+
+        if on_price_update:
+            self.sio.on('rate-update', on_price_update)
+
+        cookies = self.session.cookies.get_dict()
+        cookie_string = '; '.join([f'{k}={v}' for k, v in cookies.items()])
+        
+        headers = {
+            'Cookie': cookie_string
+        }
+        
+        try:
+            self.sio.connect(
+                'https://platform.tradem.online',
+                socketio_path='/ui/api/connect/socket',
+                transports=['websocket'],
+                headers=headers
+            )
+            logger.info(f"WebSocket connected with SID: {self.sio.sid}")
+        except Exception as e:
+            logger.error(f"WebSocket connection failed: {e}")
+            raise
+
 
     def get_wallet_valuation(self, wallet_id: str, account_id: Optional[str] = None, limit: Optional[int] = None, from_time: Optional[int] = None, to_time: Optional[int] = None, offset: Optional[int] = None) -> dict:
         target_account_id = account_id or self.default_account_id
