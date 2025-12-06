@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
 from tradem_client import Client
-from models import User, Account, Wallet
+from models import User, Account, Wallet, Currency
 
 class TestClient(unittest.TestCase):
     def setUp(self):
@@ -217,8 +217,109 @@ class TestClient(unittest.TestCase):
         self.client.default_account_id = None
         
         # Act & Assert
-        with self.assertRaisesRegex(ValueError, "Default account is not set"):
+        with self.assertRaisesRegex(Exception, "Default account is not set"):
             self.client.get_wallets()
+
+
+class TestBuySell(unittest.TestCase):
+    def setUp(self):
+        self.client = Client(email="test@example.com", password="password")
+        self.client.api_token = "fake_token"
+        
+        # Mock user data
+        self.usd_wallet = Wallet(id="wallet_usd", balance="100000", currency_id="USD", currency=Currency(id="USD", type="FIAT"))
+        self.btc_wallet = Wallet(id="wallet_btc", balance="0.5", currency_id="BTC", currency=Currency(id="BTC", type="CRYPTO"))
+        
+        self.account = Account(id="acc_1", name="Main", type="personal", wallets=[self.usd_wallet, self.btc_wallet])
+        self.user = User(id="user_1", name="Test User", accounts=[self.account])
+        
+        self.client.user_data = self.user
+        self.client.default_account_id = "acc_1"
+        
+        # Mock create_transaction to avoid network calls
+        self.client.create_transaction = MagicMock()
+
+    def test_buy_btc_success(self):
+        # Mock transaction response
+        mock_response = {
+            "data": [{
+                "attributes": {
+                    "sourceWalletId": "wallet_usd",
+                    "amountFromSourceWallet": "9000.00",
+                    "destWalletId": "wallet_btc",
+                    "amountToDestWallet": "0.1",
+                    "exchangeRate": "0.000011"
+                }
+            }]
+        }
+        self.client.create_transaction.return_value = mock_response
+
+        # Action
+        result = self.client.buy('BTC', 0.1)
+        
+        # Assert
+        self.client.create_transaction.assert_called_with(
+            source_wallet_id="wallet_usd",
+            dest_wallet_id="wallet_btc",
+            amount_to_dest=0.1
+        )
+        
+        self.assertEqual(result['amount'], 0.1)
+        # Price should be the raw exchange rate from the response
+        self.assertEqual(result['price'], 0.000011)
+        self.assertEqual(result['position'], 'long')
+
+    def test_sell_btc_success(self):
+        # Mock transaction response
+        mock_response = {
+            "data": [{
+                "attributes": {
+                    "sourceWalletId": "wallet_btc",
+                    "amountFromSourceWallet": "0.1",
+                    "destWalletId": "wallet_usd",
+                    "amountToDestWallet": "9000.00",
+                    "exchangeRate": "90000.0"
+                }
+            }]
+        }
+        self.client.create_transaction.return_value = mock_response
+        
+        # Action
+        result = self.client.sell('BTC', 0.1)
+        
+        # Assert
+        self.client.create_transaction.assert_called_with(
+            source_wallet_id="wallet_btc",
+            dest_wallet_id="wallet_usd",
+            amount_from_source=0.1
+        )
+        
+        self.assertEqual(result['amount'], 0.1)
+        # Price = Gain / Amount = 9000 / 0.1 = 90000
+        self.assertEqual(result['price'], 90000.0)
+        self.assertEqual(result['position'], 'short')
+
+    def test_missing_usd_wallet(self):
+        # Remove USD wallet
+        self.account.wallets = [self.btc_wallet]
+        
+        with self.assertRaises(Exception) as cm:
+            self.client.buy('BTC', 0.1)
+        self.assertIn("No USD wallet found", str(cm.exception))
+
+        with self.assertRaises(Exception) as cm:
+            self.client.sell('BTC', 0.1)
+        self.assertIn("No USD wallet found", str(cm.exception))
+
+    def test_missing_target_wallet(self):
+        with self.assertRaises(Exception) as cm:
+            self.client.buy('ETH', 0.1)
+        self.assertIn("No wallet found for currency ETH", str(cm.exception))
+
+    def test_buy_usd_fails(self):
+        with self.assertRaises(Exception) as cm:
+            self.client.buy('USD', 100)
+        self.assertIn("Cannot buy USD with itself", str(cm.exception))
 
 if __name__ == '__main__':
     unittest.main()

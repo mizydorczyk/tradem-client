@@ -42,3 +42,9 @@ pip install -r requirements.txt
 cd src
 python3 example.py
 ```
+
+## Testing
+
+```bash
+PYTHONPATH=src python3 -m unittest discover tests
+```

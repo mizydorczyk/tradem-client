@@ -21,3 +21,15 @@ try:
             print(f"{wallet.id:<40} {wallet.currency_id.upper():<10} {wallet.currency.type:<10} {wallet.balance:<20}")
 except Exception as e:
     print(f"Wallets fetch failed: {e}")
+
+# Example buy/sell usage (executing these will create real transactions)
+try:
+    print("Buying 0.001 BTC...")
+    buy_response = client.buy('BTC', 0.0001)
+    print(f"Buy successful: {buy_response}")
+
+    print("Selling 0.001 BTC...")
+    sell_response = client.sell('BTC', 0.0001)
+    print(f"Sell successful: {sell_response}")
+except Exception as e:
+    print(f"Transaction failed: {e}")
