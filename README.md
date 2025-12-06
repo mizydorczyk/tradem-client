@@ -118,7 +118,8 @@ def on_price_update(data):
         print(f"Rates: {', '.join(formatted)}")
 
 try:
-    client.connect_socket(on_price_update=on_price_update)
+    client.add_price_listener(on_price_update)
+    client.connect_socket()
     client.sio.wait()
 except KeyboardInterrupt:
     client.sio.disconnect()
