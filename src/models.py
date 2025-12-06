@@ -66,3 +66,9 @@ class Rates(dict):
         if isinstance(data, dict):
              return cls(data)
         return cls()
+
+class Strategy:
+    """Base class for trading strategies."""
+    
+    def on_price_update(self, data):
+        raise NotImplementedError

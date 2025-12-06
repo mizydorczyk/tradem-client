@@ -332,12 +332,15 @@ class TestWebSocket(unittest.TestCase):
     def test_connect_socket_success(self):
         # Arrange
         callback = MagicMock()
+        self.client.add_price_listener(callback)
 
         # Act
-        self.client.connect_socket(on_price_update=callback)
+        self.client.connect_socket()
 
         # Assert
-        self.client.sio.on.assert_called_with('rate-update', callback)
+        self.assertIn(callback, self.client._price_listeners)
+        self.client.sio.on.assert_called_with('rate-update', self.client._handle_price_update)
+        
         self.client.sio.connect.assert_called_with(
             'https://platform.tradem.online',
             socketio_path='/ui/api/connect/socket',
@@ -350,7 +353,8 @@ class TestWebSocket(unittest.TestCase):
         self.client.connect_socket()
 
         # Assert
-        self.client.sio.on.assert_not_called()
+        # Even without external listeners, we register the internal handler
+        self.client.sio.on.assert_called_with('rate-update', self.client._handle_price_update)
         self.client.sio.connect.assert_called()
 
     def test_connect_socket_failure(self):
@@ -360,6 +364,54 @@ class TestWebSocket(unittest.TestCase):
         # Act & Assert
         with self.assertRaisesRegex(Exception, "Connection failed"):
             self.client.connect_socket()
+
+class TestMultiStrategy(unittest.TestCase):
+    def setUp(self):
+        self.client = Client("test@example.com", "password")
+        self.client.sio = MagicMock()
+
+    def test_add_listener(self):
+        # Arrange
+        mock_callback = MagicMock()
+        self.client.add_price_listener(mock_callback)
+
+        # Act & Assert
+        self.assertIn(mock_callback, self.client._price_listeners)
+
+    def test_multiple_listeners_called(self):
+        # Arrange
+        mock_strategy_1 = MagicMock()
+        mock_strategy_2 = MagicMock()
+        
+        self.client.add_price_listener(mock_strategy_1)
+        self.client.add_price_listener(mock_strategy_2)
+        
+        # Act
+        test_data = {'btc-usd': '50000'}
+        self.client._handle_price_update(test_data)
+        
+        # Assert
+        mock_strategy_1.assert_called_once_with(test_data)
+        mock_strategy_2.assert_called_once_with(test_data)
+
+    def test_listener_exception_safety(self):
+        # Arrange
+        bad_listener = MagicMock(side_effect=Exception("Crash"))
+        good_listener = MagicMock()
+        
+        self.client.add_price_listener(bad_listener)
+        self.client.add_price_listener(good_listener)
+        
+        test_data = {'btc-usd': '50000'}
+        
+        # Act & Assert
+        try:
+            self.client._handle_price_update(test_data)
+        except Exception:
+            self.fail("_handle_price_update raised Exception unexpectedly")
+            
+        bad_listener.assert_called_once()
+        good_listener.assert_called_once()
 
 if __name__ == '__main__':
     unittest.main()

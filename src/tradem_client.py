@@ -24,6 +24,7 @@ class Client:
         self.user_data = None
         self.default_account_id = None
         self.sio = socketio.Client(logger=False, engineio_logger=False)
+        self._price_listeners = []
 
     def initialize(self):
         logger.debug("Initializing...")
@@ -96,11 +97,22 @@ class Client:
         logger.debug("Transaction created successfully")
         return response.json()
 
-    def connect_socket(self, on_price_update=None):
+    def add_price_listener(self, callback):
+        """Registers a callback for price updates."""
+        self._price_listeners.append(callback)
+
+    def _handle_price_update(self, data):
+        """Internal handler to dispatch updates to all listeners."""
+        for listener in self._price_listeners:
+            try:
+                listener(data)
+            except Exception as e:
+                logger.error(f"Error in price listener: {e}")
+
+    def connect_socket(self):
         logger.debug("Connecting to WebSocket...")
 
-        if on_price_update:
-            self.sio.on('rate-update', on_price_update)
+        self.sio.on('rate-update', self._handle_price_update)
 
         cookies = self.session.cookies.get_dict()
         cookie_string = '; '.join([f'{k}={v}' for k, v in cookies.items()])
