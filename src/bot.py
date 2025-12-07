@@ -40,8 +40,8 @@ def main():
         logger.error(f"Failed to initialize client: {e}")
         return
 
-    btc_strategy = AdxEma200(client, symbol='BTC-USD', budget=10000, interval=60)
-    eth_strategy = AdxEma200(client, symbol='ETH-USD', budget=10000, interval=60)
+    btc_strategy = AdxEma200(client, symbol='BTC-USD', budget=10000, interval=3600)
+    eth_strategy = AdxEma200(client, symbol='ETH-USD', budget=10000, interval=3600)
 
     client.add_price_listener(btc_strategy.on_price_update)
     client.add_price_listener(eth_strategy.on_price_update)
