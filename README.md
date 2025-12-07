@@ -100,19 +100,16 @@ except Exception as e:
 
 ### Live rates
 ```python
-from models import Rates
-
 # ...
 
-def on_price_update(data):
-    rates = Rates.from_dict(data)
+target_pairs = ['btc-usd', 'eth-usd']
 
-    target_pairs = ['btc-usd', 'eth-usd']
+def on_price_update(data):
     formatted = []
     
     for pair in target_pairs:
-        if pair in rates:
-             formatted.append(f"{pair.upper()}: {rates[pair]}")
+        if pair in data:
+             formatted.append(f"{pair.upper()}: {data[pair]}")
     
     if formatted:
         print(f"Rates: {', '.join(formatted)}")
