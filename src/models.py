@@ -60,13 +60,6 @@ class User:
             accounts=[Account.from_dict(a) for a in user_data.get('accounts', [])]
         )
 
-class Rates(dict):
-    @classmethod
-    def from_dict(cls, data: dict): 
-        if isinstance(data, dict):
-             return cls(data)
-        return cls()
-
 class Strategy:
     """Base class for trading strategies."""
     

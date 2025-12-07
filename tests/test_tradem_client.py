@@ -265,8 +265,8 @@ class TestBuySell(unittest.TestCase):
         )
         
         self.assertEqual(result['amount'], 0.1)
-        # Price should be the raw exchange rate from the response
-        self.assertEqual(result['price'], 0.000011)
+        # Price should be calculated as amount_spent / amount_bought
+        self.assertEqual(result['price'], 90000.0)
         self.assertEqual(result['position'], 'long')
 
     def test_sell_btc_success(self):

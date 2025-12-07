@@ -36,7 +36,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. Run the example trading bot from the `src` directory:
+4. Run the trading bot from the `src` directory:
 
 ```bash
 cd src

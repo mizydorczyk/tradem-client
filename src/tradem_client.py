@@ -216,7 +216,8 @@ class Client:
         
         attributes = response['data'][0]['attributes']
         executed_amount = float(attributes['amountToDestWallet'])
-        price = float(attributes['exchangeRate'])
+        amount_spent = float(attributes['amountFromSourceWallet'])
+        price = amount_spent / executed_amount if executed_amount > 0 else 0.0
 
         return {
             "amount": executed_amount,
