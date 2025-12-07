@@ -23,15 +23,15 @@ class AdxEma200(Strategy):
             self.quote_currency: budget,
             self.base_currency: 0.0
         }
-        self.risk = 0.04
+        self.risk = 0.01
         self.spread_pct = 0.0025
-        self.volatility_safety_factor = 1.1
+        self.volatility_safety_factor = 1.8
         self.adx_level = 25
         self.ema_length = 200
         self.atr_sl_mult = 1.5
         self.atr_tp_mult = 5.5
         
-        self.history = deque(maxlen=500)
+        self.history = deque(maxlen=1000)
         self.position = None
         self.sl_price = 0.0
         self.tp_price = 0.0
@@ -76,7 +76,25 @@ class AdxEma200(Strategy):
             logger.warning(f"[{self.symbol.upper()}] Failed to fetch historical data: {e}. Warmup will be slow.")
 
     def _calculate_rma(self, series, length):
-        return series.ewm(alpha=1/length, adjust=False).mean()
+        alpha = 1.0 / length
+        rma = np.full_like(series, np.nan, dtype=float)
+        
+        if len(series) < length:
+            return pd.Series(rma, index=series.index)
+            
+        initial_sma = series.iloc[:length].mean()
+        rma[length - 1] = initial_sma
+
+        values = series.values
+        
+        for i in range(length, len(values)):
+            previous_rma = rma[i-1]
+            current_val = values[i]
+            if np.isnan(previous_rma):
+                 continue
+            rma[i] = (current_val * alpha) + (previous_rma * (1 - alpha))
+            
+        return pd.Series(rma, index=series.index)
 
     def _calculate_atr(self, df, length=14):
         high = df['high']
