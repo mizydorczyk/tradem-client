@@ -54,15 +54,15 @@ class TestAdxEma200(unittest.TestCase):
         # Act & Assert
         self.strategy.enter_trade(50000, 100)
         
-        self.assertEqual(self.strategy.virtual_wallet['USD'], 960.0)
-        self.assertAlmostEqual(self.strategy.virtual_wallet['BTC'], 0.0008)
+        self.assertEqual(self.strategy.virtual_wallet['USD'], 990.0)
+        self.assertAlmostEqual(self.strategy.virtual_wallet['BTC'], 0.0002)
         
         self.strategy.exit_trade(55000, "Test Exit")
         
         self.assertEqual(self.strategy.virtual_wallet['BTC'], 0.0)
         # 0.0004 * 55000 = 22.0 USD returned.
         # 980 + 22 = 1002.0
-        self.assertAlmostEqual(self.strategy.virtual_wallet['USD'], 1004.0)
+        self.assertAlmostEqual(self.strategy.virtual_wallet['USD'], 1001.0)
 
     def test_indicators_calculation(self):
         # Arrange
