@@ -2,7 +2,7 @@
 
 Python client for the Tradem platform API.
 
-Has been adapted from https://github.com/The-Brawl/the-brawl-client-api by Mateusz Bajorek.
+Has been adapted from https://github.com/tradem-competition/tradem-client-api by Mateusz Bajorek.
 
 ## Project Structure
 
